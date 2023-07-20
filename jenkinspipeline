@@ -1,0 +1,42 @@
+pipeline {
+    agent {
+        label 'kub-master'
+    }
+    
+    environment {
+        DOCKER_HUB_CREDENTIALS = '200149b8-add2-4b0e-a15e-20c3a22d11ec' // The ID of your Docker Hub credentials in Jenkins
+        DOCKER_IMAGE_NAME = 'tejaswinichilkuri/jenkins-k8s-build' // Replace with your Docker Hub username and image name
+        K8S_NAMESPACE = 'default' // Replace with your Kubernetes namespace
+    }
+    
+    stages {
+        stage('Hello World') {
+            steps {
+                echo 'Hello, world!'
+            }
+        }
+        
+        stage('Clone from Git') {
+            steps {
+                git 'https://github.com/tejachilukuri/website.git' // Replace with your Git repository URL
+            }
+        }
+        
+        stage('Build and Push Image') {
+            steps {
+                // Use the 'withCredentials' block to bind the Docker Hub credentials to the 'DOCKER_LOGIN' variable
+                withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS, usernameVariable: 'DOCKER_LOGIN_USERNAME', passwordVariable: 'DOCKER_LOGIN_PASSWORD')]) {
+                    // Build the Docker image with a specific tag (e.g., version number or commit SHA)
+                    sh "sudo docker build -t ${DOCKER_IMAGE_NAME}:1.0 /home/ubuntu/jenkins/workspace/pipeline"
+                    
+                    // Execute the Docker login command using the credentials with '--password-stdin'
+                    sh "echo $DOCKER_LOGIN_PASSWORD |sudo  docker login -u $DOCKER_LOGIN_USERNAME --password-stdin"
+                    
+                    // Push the Docker image with the specified tag to Docker Hub
+                    sh "sudo docker push ${DOCKER_IMAGE_NAME}:1.0"
+		            sh 'sudo kubectl apply -f k8s.yaml'
+                }
+            }
+        }
+    }
+}
