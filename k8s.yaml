@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+spec:
+  replicas: 3  # Number of replicas you want to deploy
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: tejaswinichilkuri/jenkins-k8s-build:1.0 # Replace with your Docker image URL and version
+        ports:
+        - containerPort: 80  # Port exposed by your container
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+  - protocol: TCP
+    port: 80  # Port exposed by the service (the same as the containerPort in the Deployment)
+    targetPort: 80  # Port to forward traffic to in the pods
+  type: NodePort  # Expose the service on a random port on each node in the cluster
